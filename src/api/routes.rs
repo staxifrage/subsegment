@@ -50,7 +50,7 @@ pub fn build_router(state: AppState) -> Router {
         .route("/api/v1/broadcasts", get(list_broadcasts))
         .route("/api/v1/pipelines", get(list_pipelines))
         .route(
-            "/api/v1/broadcasts/{mountpoint}/stream",
+            "/api/v1/broadcasts/:mountpoint/stream",
             get(crate::api::stream::handle),
         )
         .layer(middleware::from_fn(access_log))

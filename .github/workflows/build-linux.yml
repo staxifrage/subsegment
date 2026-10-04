@@ -3,7 +3,9 @@ name: Build Linux binaries
 on:
   release:
     types: [published]
-  workflow_dispatch: # Allows manual triggering via the Actions tab
+  # Highlight-end
+  pull_request:
+  workflow_dispatch:
 
 env:
   CARGO_TERM_COLOR: always

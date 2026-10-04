@@ -118,8 +118,13 @@ async fn main() -> anyhow::Result<()> {
     let app = build_router(state);
 
     // 4. Serve until SIGTERM or Ctrl-C, then tear pipelines down gracefully.
+    // `into_make_service_with_connect_info` makes the peer address available
+    // to handlers via `ConnectInfo` (used for per-IP rate limiting).
     let shutdown_manager = manager.clone();
-    axum::serve(listener, app)
+    axum::serve(
+        listener,
+        app.into_make_service_with_connect_info::<std::net::SocketAddr>(),
+    )
         .with_graceful_shutdown(async move {
             let mut sigterm = signal::unix::signal(signal::unix::SignalKind::terminate())
                 .expect("installing SIGTERM handler");

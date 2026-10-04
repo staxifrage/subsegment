@@ -35,24 +35,33 @@ impl AppState {
 
 /// Build the full HTTP router.
 ///
-/// Routes:
+/// Canonical routes:
 /// - `GET /api/v1/broadcasts/{mountpoint}/stream?quality=&codec=`
 /// - `GET /health`  — process liveness
 /// - `GET /ready`   — readiness (config valid, not draining)
 /// - `GET /metrics` — Prometheus text format
 /// - `GET /api/v1/broadcasts` — configured mountpoints (sanitized view)
 /// - `GET /api/v1/pipelines`  — live pipeline snapshot (operational)
+///
+/// Legacy aliases (kept so existing players/clients keep working):
+/// - `GET /broadcast/{id}/stream`
+/// - `GET /stream/{mountpoint}`
 pub fn build_router(state: AppState) -> Router {
+    let stream_routes = Router::new()
+        .route(
+            "/api/v1/broadcasts/:mountpoint/stream",
+            get(crate::api::stream::handle),
+        )
+        .route("/broadcast/:id/stream", get(crate::api::stream::handle))
+        .route("/stream/:mountpoint", get(crate::api::stream::handle));
+
     Router::new()
         .route("/health", get(crate::api::health::health))
         .route("/ready", get(crate::api::health::ready))
         .route("/metrics", get(metrics))
         .route("/api/v1/broadcasts", get(list_broadcasts))
         .route("/api/v1/pipelines", get(list_pipelines))
-        .route(
-            "/api/v1/broadcasts/:mountpoint/stream",
-            get(crate::api::stream::handle),
-        )
+        .merge(stream_routes)
         .layer(middleware::from_fn(access_log))
         .layer(middleware::from_fn(request_id::middleware))
         .with_state(state)
@@ -71,7 +80,10 @@ async fn access_log(req: Request, next: Next) -> Response {
 }
 
 fn static_route(path: &str) -> &'static str {
-    if path.starts_with("/api/v1/broadcasts/") && path.ends_with("/stream") {
+    if (path.starts_with("/api/v1/broadcasts/") && path.ends_with("/stream"))
+        || (path.starts_with("/broadcast/") && path.ends_with("/stream"))
+        || path.starts_with("/stream/")
+    {
         "broadcast_stream"
     } else if path == "/api/v1/broadcasts" {
         "broadcast_list"

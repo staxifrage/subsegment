@@ -121,10 +121,15 @@ async fn icy_interleaved(
     }
 }
 
-/// GET /broadcast/{id}/stream — the full preflight-ordered pipeline.
+/// Stream endpoint (registered under `/api/v1/broadcasts/:mountpoint/stream`
+/// plus legacy aliases) — the full preflight-ordered pipeline.
+///
+/// `ConnectInfo` is optional so the handler also works behind proxies or in
+/// tests where the transport peer address is unavailable; rate limiting then
+/// falls back to a shared bucket instead of failing the request.
 pub async fn handle(
     State(state): State<crate::api::routes::AppState>,
-    ConnectInfo(addr): ConnectInfo<std::net::SocketAddr>,
+    addr: Option<ConnectInfo<std::net::SocketAddr>>,
     Path(id): Path<String>,
     headers: HeaderMap,
     uri: axum::http::Uri,
@@ -145,7 +150,11 @@ pub async fn handle(
     let params = parse_query_pairs(&query_pairs)?;
 
     // 2. Rate limit per client IP.
-    state.rate_limiter.check(ip_bits(&addr))?;
+    let ip = match addr {
+        Some(ConnectInfo(a)) => ip_bits(&a),
+        None => u128::MAX, // no transport info (proxy/test): shared bucket
+    };
+    state.rate_limiter.check(ip)?;
 
     // 3. Authentication & authorization before ANY upstream/transcoder work.
     let authz = headers

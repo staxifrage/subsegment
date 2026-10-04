@@ -333,12 +333,13 @@ impl BroadcastConfig {
 impl AppConfig {
     /// Load + validate configuration. Fails clearly on invalid input.
     ///
-    /// When no configuration file exists and none was explicitly requested
-    /// (via `--config` or `SUBSEGMENT_CONFIG`), a starter `config.yaml` is
-    /// generated next to the working directory with a random API token and
-    /// an example broadcast, and the engine starts from it. This makes the
-    /// first run of the binary succeed out of the box while keeping secrets
-    /// out of the repository.
+    /// When no configuration file exists — or the file is empty, as happens
+    /// when a container runtime pre-creates the mount point — and none was
+    /// explicitly requested (via `--config` or `SUBSEGMENT_CONFIG`), a
+    /// starter `config.yaml` is generated in the working directory with a
+    /// random API token and an example broadcast, and the engine starts
+    /// from it. This makes the first run of the binary succeed out of the
+    /// box while keeping secrets out of the repository.
     pub fn load(path_override: Option<PathBuf>) -> Result<Self> {
         use figment::{
             providers::{Env, Format, Serialized, Yaml},
@@ -352,25 +353,31 @@ impl AppConfig {
             .unwrap_or_else(|| PathBuf::from("config.yaml"));
 
         let mut fig = Figment::from(Serialized::defaults(AppConfig::default()));
-        if path.exists() {
+        if !config_file_is_blank(&path) {
             fig = fig.merge(Yaml::file(&path));
-        } else if explicit {
+        } else if explicit && !path.exists() {
             return Err(EngineError::Config(format!(
                 "configuration file not found: {}",
                 path.display()
             )));
         } else {
-            // First startup: generate a starter configuration and use it.
+            // First startup (file missing or blank): generate a starter
+            // configuration and use it.
             let token = generate_api_token();
             let template = starter_config_yaml(&token);
+            let reason = if path.exists() {
+                "configuration file exists but is empty"
+            } else {
+                "no configuration file found"
+            };
             match std::fs::write(&path, &template) {
                 Ok(()) => eprintln!(
-                    "no configuration file found — generated starter configuration at '{}' \
+                    "{reason} — generated starter configuration at '{}' \
                      (includes a randomly generated API token; edit the file to fit your setup)",
                     path.display()
                 ),
                 Err(e) => eprintln!(
-                    "no configuration file found and '{}' could not be written ({}); \
+                    "{reason} and '{}' could not be written ({}); \
                      continuing with the in-memory starter configuration",
                     path.display(),
                     e
@@ -419,6 +426,19 @@ impl Default for AppConfig {
             transcoding: TranscodingConfig::default(),
             broadcasts: BTreeMap::new(),
         }
+    }
+}
+
+/// True when `path` holds no configuration content: missing, empty or
+/// whitespace-only. Container runtimes and deployment templates commonly
+/// pre-create an empty `config.yaml` at the mount point; such a file must
+/// not suppress first-run starter generation.
+fn config_file_is_blank(path: &std::path::Path) -> bool {
+    match std::fs::read_to_string(path) {
+        Ok(contents) => contents.trim().is_empty(),
+        // Unreadable (permissions): only treat a truly absent file as blank;
+        // let the YAML provider surface I/O errors for unreadable ones.
+        Err(_) => !path.exists(),
     }
 }
 
@@ -540,6 +560,30 @@ mod tests {
         assert_eq!(cfg.security.api_tokens, vec![token]);
         assert!(cfg.broadcast("example").is_some());
         assert_eq!(cfg.server.name, "subsegment");
+    }
+
+    #[test]
+    fn blank_config_file_is_treated_as_missing() {
+        let dir = tempfile::tempdir().unwrap();
+
+        // Missing file -> blank (starter generation applies).
+        let missing = dir.path().join("config.yaml");
+        assert!(config_file_is_blank(&missing));
+
+        // Empty file -> blank (e.g. pre-created container volume mount).
+        let empty = dir.path().join("empty.yaml");
+        std::fs::write(&empty, "").unwrap();
+        assert!(config_file_is_blank(&empty));
+
+        // Whitespace-only file -> blank.
+        let whitespace = dir.path().join("ws.yaml");
+        std::fs::write(&whitespace, "  \n\t\n").unwrap();
+        assert!(config_file_is_blank(&whitespace));
+
+        // Real content -> not blank, must be read as-is.
+        let real = dir.path().join("real.yaml");
+        std::fs::write(&real, "server:\n  bind: 127.0.0.1:9999\n").unwrap();
+        assert!(!config_file_is_blank(&real));
     }
 
     #[test]

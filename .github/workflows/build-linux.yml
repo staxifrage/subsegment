@@ -1,11 +1,9 @@
 name: Build Linux binaries
 
 on:
-  push:
-    branches: [main]
-    tags: ["v*"]
-  pull_request:
-  workflow_dispatch:
+  release:
+    types: [published]
+  workflow_dispatch: # Allows manual triggering via the Actions tab
 
 env:
   CARGO_TERM_COLOR: always

@@ -1,7 +1,7 @@
 //! Authentication abstraction.
 //!
 //! Handlers depend only on the [`AuthProvider`] trait so additional methods
-//! (JWT, OAuth2/OIDC, NuxStream account backend) can be added later without
+//! (JWT, OAuth2/OIDC, account backend) can be added later without
 //! touching stream code.
 
 pub mod bearer;

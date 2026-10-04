@@ -14,7 +14,7 @@ use crate::api::routes::AppState;
 pub async fn health() -> Response {
     Json(serde_json::json!({
         "status": "ok",
-        "service": "nuxstream-stream-engine",
+        "service": "subsegment",
         "version": env!("CARGO_PKG_VERSION"),
     }))
     .into_response()

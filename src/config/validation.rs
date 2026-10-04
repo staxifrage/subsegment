@@ -32,7 +32,7 @@ pub fn validate(cfg: &AppConfig) -> Result<()> {
     {
         errors.push(
             "authentication is required but no tokens are configured \
-             (security.api_tokens or NUXSTREAM_TOKENS)"
+             (security.api_tokens or SUBSEGMENT_TOKENS)"
                 .into(),
         );
     }

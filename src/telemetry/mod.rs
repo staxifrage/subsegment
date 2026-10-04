@@ -8,9 +8,9 @@ use tracing_subscriber::util::SubscriberInitExt;
 use tracing_subscriber::{fmt, EnvFilter};
 
 /// Initialize `tracing` exactly once. JSON output for production, plain
-/// text for development; level comes from config/env (`NUXSTREAM_LOG` wins).
+/// text for development; level comes from config/env (`SUBSEGMENT_LOG` wins).
 pub fn init_logging(json: bool, default_level: &str) {
-    let filter = EnvFilter::try_from_env("NUXSTREAM_LOG")
+    let filter = EnvFilter::try_from_env("SUBSEGMENT_LOG")
         .unwrap_or_else(|_| EnvFilter::new(default_level));
     let reg = tracing_subscriber::registry().with(filter);
     if json {

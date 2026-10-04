@@ -1,18 +1,18 @@
 [package]
-name = "nuxstream-stream-engine"
+name = "subsegment"
 version = "0.1.0"
 edition = "2021"
-description = "NuxStream Radio stream engine: ingest, normalize, transcode and serve live broadcast streams."
+description = "Subsegment radio stream engine: ingest, normalize, transcode and serve live broadcast streams."
 license = "MIT"
-repository = "https://github.com/nuxstream/stream-engine"
+repository = "https://github.com/nuxstream/subsegment"
 rust-version = "1.75"
 
 [lib]
-name = "nuxstream_engine"
+name = "subsegment"
 path = "src/lib.rs"
 
 [[bin]]
-name = "nuxstream-stream-engine"
+name = "subsegment"
 path = "src/main.rs"
 
 [dependencies]

@@ -9,7 +9,7 @@ use prometheus::{
 /// Active listeners (by broadcast).
 pub static LISTENERS: Lazy<GaugeVec> = Lazy::new(|| {
     register_gauge_vec!(
-        "nuxstream_listeners_active",
+        "subsegment_listeners_active",
         "Active listeners per broadcast",
         &["broadcast"]
     )
@@ -19,7 +19,7 @@ pub static LISTENERS: Lazy<GaugeVec> = Lazy::new(|| {
 /// Active upstream connections (by broadcast).
 pub static UPSTREAM_CONNECTIONS: Lazy<GaugeVec> = Lazy::new(|| {
     register_gauge_vec!(
-        "nuxstream_upstream_connections_active",
+        "subsegment_upstream_connections_active",
         "Active upstream connections per broadcast",
         &["broadcast"]
     )
@@ -29,7 +29,7 @@ pub static UPSTREAM_CONNECTIONS: Lazy<GaugeVec> = Lazy::new(|| {
 /// Live pipelines (by broadcast and kind).
 pub static PIPELINES: Lazy<GaugeVec> = Lazy::new(|| {
     register_gauge_vec!(
-        "nuxstream_pipelines_active",
+        "subsegment_pipelines_active",
         "Active pipelines per broadcast",
         &["broadcast", "kind"]
     )
@@ -39,7 +39,7 @@ pub static PIPELINES: Lazy<GaugeVec> = Lazy::new(|| {
 /// Total pipelines created (by broadcast and kind).
 pub static PIPELINES_CREATED: Lazy<CounterVec> = Lazy::new(|| {
     register_counter_vec!(
-        "nuxstream_pipelines_created_total",
+        "subsegment_pipelines_created_total",
         "Pipelines created",
         &["broadcast", "kind"]
     )
@@ -49,7 +49,7 @@ pub static PIPELINES_CREATED: Lazy<CounterVec> = Lazy::new(|| {
 /// Upstream reconnect events.
 pub static UPSTREAM_RECONNECTS: Lazy<CounterVec> = Lazy::new(|| {
     register_counter_vec!(
-        "nuxstream_upstream_reconnects_total",
+        "subsegment_upstream_reconnects_total",
         "Upstream reconnect count",
         &["broadcast"]
     )
@@ -59,7 +59,7 @@ pub static UPSTREAM_RECONNECTS: Lazy<CounterVec> = Lazy::new(|| {
 /// Bytes received from upstreams.
 pub static BYTES_RECEIVED: Lazy<CounterVec> = Lazy::new(|| {
     register_counter_vec!(
-        "nuxstream_bytes_received_total",
+        "subsegment_bytes_received_total",
         "Bytes received from upstreams",
         &["broadcast"]
     )
@@ -69,7 +69,7 @@ pub static BYTES_RECEIVED: Lazy<CounterVec> = Lazy::new(|| {
 /// Bytes transmitted to listeners.
 pub static BYTES_SENT: Lazy<CounterVec> = Lazy::new(|| {
     register_counter_vec!(
-        "nuxstream_bytes_sent_total",
+        "subsegment_bytes_sent_total",
         "Bytes transmitted to listeners",
         &["broadcast"]
     )
@@ -79,7 +79,7 @@ pub static BYTES_SENT: Lazy<CounterVec> = Lazy::new(|| {
 /// Authentication failures by reason code.
 pub static AUTH_FAILURES: Lazy<CounterVec> = Lazy::new(|| {
     register_counter_vec!(
-        "nuxstream_auth_failures_total",
+        "subsegment_auth_failures_total",
         "Authentication/authorization failures",
         &["reason"]
     )
@@ -89,7 +89,7 @@ pub static AUTH_FAILURES: Lazy<CounterVec> = Lazy::new(|| {
 /// Upstream failures by broadcast.
 pub static UPSTREAM_FAILURES: Lazy<CounterVec> = Lazy::new(|| {
     register_counter_vec!(
-        "nuxstream_upstream_failures_total",
+        "subsegment_upstream_failures_total",
         "Upstream connection/read failures",
         &["broadcast"]
     )
@@ -99,7 +99,7 @@ pub static UPSTREAM_FAILURES: Lazy<CounterVec> = Lazy::new(|| {
 /// Transcoder failures by broadcast.
 pub static TRANSCODER_FAILURES: Lazy<CounterVec> = Lazy::new(|| {
     register_counter_vec!(
-        "nuxstream_transcoder_failures_total",
+        "subsegment_transcoder_failures_total",
         "Transcoder failures",
         &["broadcast"]
     )
@@ -109,7 +109,7 @@ pub static TRANSCODER_FAILURES: Lazy<CounterVec> = Lazy::new(|| {
 /// Dropped slow listeners.
 pub static SLOW_LISTENER_DROPS: Lazy<CounterVec> = Lazy::new(|| {
     register_counter_vec!(
-        "nuxstream_slow_listener_drops_total",
+        "subsegment_slow_listener_drops_total",
         "Listeners disconnected due to lag limits",
         &["broadcast"]
     )
@@ -119,7 +119,7 @@ pub static SLOW_LISTENER_DROPS: Lazy<CounterVec> = Lazy::new(|| {
 /// HTTP request latency seconds (by route + status class).
 pub static REQUEST_LATENCY: Lazy<HistogramVec> = Lazy::new(|| {
     register_histogram_vec!(
-        "nuxstream_request_latency_seconds",
+        "subsegment_request_latency_seconds",
         "HTTP request latency",
         &["route", "status"],
         vec![0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1.0, 2.5, 5.0]
@@ -130,7 +130,7 @@ pub static REQUEST_LATENCY: Lazy<HistogramVec> = Lazy::new(|| {
 /// Requests rejected by the rate limiter.
 pub static RATE_LIMITED: Lazy<CounterVec> = Lazy::new(|| {
     register_counter_vec!(
-        "nuxstream_rate_limited_total",
+        "subsegment_rate_limited_total",
         "Requests rejected by rate limiting",
         &["route"]
     )
@@ -139,7 +139,7 @@ pub static RATE_LIMITED: Lazy<CounterVec> = Lazy::new(|| {
 
 /// Process start time (unix seconds) — readiness uptime helper.
 pub static STARTED: Lazy<Gauge> = Lazy::new(|| {
-    register_gauge!("nuxstream_process_start_seconds", "Process start time")
+    register_gauge!("subsegment_process_start_seconds", "Process start time")
         .expect("metrics registry")
 });
 
@@ -170,7 +170,7 @@ mod tests {
             .with_label_values(&["t_render"])
             .inc_by(1234.0);
         let out = gather();
-        assert!(out.contains("nuxstream_listeners_active"));
-        assert!(out.contains("nuxstream_bytes_received_total"));
+        assert!(out.contains("subsegment_listeners_active"));
+        assert!(out.contains("subsegment_bytes_received_total"));
     }
 }

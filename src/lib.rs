@@ -1,4 +1,4 @@
-//! NuxStream Stream Engine — library root.
+//! Subsegment stream engine — library root.
 //!
 //! Production-oriented backend that ingests live broadcast streams,
 //! normalizes/transcodes them and serves authenticated HTTP listeners

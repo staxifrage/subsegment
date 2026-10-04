@@ -248,7 +248,12 @@ mod tests {
     #[tokio::test]
     async fn slow_listener_dropped_after_lag_budget() {
         let f = Fanout::new(2, Duration::from_millis(50));
-        let _keep = f.subscribe(); // healthy sink below
+        // Healthy sink: drained continuously in the background so its queue
+        // never stays full past the lag budget.
+        let mut healthy = f.subscribe();
+        let drain = tokio::spawn(async move {
+            while healthy.rx.recv().await.is_some() {}
+        });
         let slow = f.subscribe(); // never read
         // Flood past the queue depth until the lag timer engages.
         for i in 0..10u8 {
@@ -260,6 +265,7 @@ mod tests {
         assert!(slow.rx.is_closed());
         assert_eq!(f.dropped_slow_listeners(), 1);
         assert_eq!(f.subscriber_count(), 1);
+        drain.abort();
     }
 
     #[tokio::test]

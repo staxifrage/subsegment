@@ -1,4 +1,4 @@
-//! NuxStream Stream Engine — server binary.
+//! Subsegment stream engine — server binary.
 //!
 //! Startup order (fail fast before binding):
 //! 1. load + validate configuration;
@@ -13,14 +13,14 @@ use anyhow::Context;
 use tokio::signal;
 use tracing::{info, warn};
 
-use nuxstream_engine::api::{build_router, AppState};
-use nuxstream_engine::auth::policy::AccessPolicy;
-use nuxstream_engine::config::AppConfig;
-use nuxstream_engine::ingest::build_http_client;
-use nuxstream_engine::pipeline::manager::PipelineManager;
-use nuxstream_engine::security::limits::{LimitGuard, RateLimiter};
-use nuxstream_engine::telemetry;
-use nuxstream_engine::transcoder::{FfmpegTranscoder, PassthroughTranscoder, Transcoder};
+use subsegment::api::{build_router, AppState};
+use subsegment::auth::policy::AccessPolicy;
+use subsegment::config::AppConfig;
+use subsegment::ingest::build_http_client;
+use subsegment::pipeline::manager::PipelineManager;
+use subsegment::security::limits::{LimitGuard, RateLimiter};
+use subsegment::telemetry;
+use subsegment::transcoder::{FfmpegTranscoder, PassthroughTranscoder, Transcoder};
 
 fn parse_config_path() -> Option<std::path::PathBuf> {
     let mut args = std::env::args().skip(1);
@@ -31,12 +31,14 @@ fn parse_config_path() -> Option<std::path::PathBuf> {
             }
             "--help" | "-h" => {
                 println!(
-                    "Usage: nuxstream-stream-engine [--config path.yaml]\n\
+                    "Usage: subsegment [--config path.yaml]\n\
+                     \nOn first startup (when no config file exists) a starter\n\
+                     \nconfig.yaml is generated next to the executable.\n\
                      \nEnvironment:\n\
-                     \x20 NUXSTREAM_CONFIG=path          config file location\n\
-                     \x20 NUXSTREAM_TOKENS=k1,k2         bearer tokens (secret injection)\n\
-                     \x20 NUXSTREAM__SECTION__KEY=...    override any config key\n\
-                     \x20 NUXSTREAM_LOG=info,...         tracing env-filter"
+                     \x20 SUBSEGMENT_CONFIG=path          config file location\n\
+                     \x20 SUBSEGMENT_TOKENS=k1,k2         bearer tokens (secret injection)\n\
+                     \x20 SUBSEGMENT__SECTION__KEY=...    override any config key\n\
+                     \x20 SUBSEGMENT_LOG=info,...         tracing env-filter"
                 );
                 std::process::exit(0);
             }
@@ -81,7 +83,7 @@ async fn main() -> anyhow::Result<()> {
         version = env!("CARGO_PKG_VERSION"),
         bind = %cfg.server.bind,
         broadcasts = cfg.broadcasts.len(),
-        "starting nuxstream stream engine"
+        "starting subsegment stream engine"
     );
 
     // 2. Shared components.

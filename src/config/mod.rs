@@ -254,6 +254,14 @@ pub struct TranscodingConfig {
     pub output_queue_len: usize,
     /// Set true when the local ffmpeg build includes libfdk_aac (HE-AAC).
     pub aacplus_supported: bool,
+    /// Input probe size used by FFmpeg for live streams.
+    pub probe_size: u32,
+
+    /// Maximum FFmpeg input analysis duration in microseconds.
+    pub analyze_duration_us: u32,
+
+    /// Immediately flush muxed output packets.
+    pub flush_packets: bool,
 }
 
 impl Default for TranscodingConfig {
@@ -265,6 +273,9 @@ impl Default for TranscodingConfig {
             threads_per_pipeline: 2,
             output_queue_len: 64,
             aacplus_supported: false,
+            probe_size: 32 * 1024,
+            analyze_duration_us: 100_000,
+            flush_packets: true,
         }
     }
 }
@@ -498,7 +509,7 @@ limits:
   max_transcoding_pipelines: 16
   listener_queue_chunks: 128
   listener_lag_timeout_secs: 10
-  pipeline_grace_secs: 30
+  pipeline_grace_secs: 300
   upstream_read_timeout_secs: 30
   upstream_connect_timeout_secs: 10
   upstream_max_redirects: 3
@@ -514,15 +525,25 @@ streaming:
   #opus_medium_kbps: 96
   #opus_high_kbps: 160
 
-transcoding:
-  # "ffmpeg" or "passthrough_only" (relay upstreams without re-encoding).
-  backend: ffmpeg
-  ffmpeg_path: ffmpeg
-  max_concurrent: 16
-  threads_per_pipeline: 2
-  output_queue_len: 64
-  # Set true when the local ffmpeg build includes libfdk_aac (HE-AAC).
-  aacplus_supported: false
+  transcoding:
+    # "ffmpeg" or "passthrough_only"
+    backend: ffmpeg
+
+    ffmpeg_path: ffmpeg
+
+    max_concurrent: 16
+    threads_per_pipeline: 2
+    output_queue_len: 64
+
+    # Reduce FFmpeg cold-start analysis latency for live radio.
+    probe_size: 32768
+    analyze_duration_us: 100000
+
+    # Flush encoded packets as soon as they are produced.
+    flush_packets: true
+
+    # Set true only if FFmpeg includes libfdk_aac.
+    aacplus_supported: false
 
 broadcasts:
   # Mountpoint id — clients stream at /stream/<id>.

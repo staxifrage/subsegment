@@ -28,10 +28,25 @@ pub fn build_args(cfg: &TranscodingConfig, profile: &EncodingProfile) -> Vec<Str
         "-loglevel".into(),
         "warning".into(),
         "-nostats".into(),
+
+        // Low-latency live-stream input.
+        "-fflags".into(),
+        "+nobuffer".into(),
+
+        // Limit how much FFmpeg reads before deciding the input format.
+        "-probesize".into(),
+        cfg.probe_size.to_string(),
+
+        // Limit stream analysis time.
+        "-analyzeduration".into(),
+        cfg.analyze_duration_us.to_string(),
+
         "-threads".into(),
         profile.threads.to_string(),
+
         "-i".into(),
         "pipe:0".into(),
+
         "-vn".into(),
         "-map".into(),
         "a:0".into(),
@@ -100,6 +115,13 @@ pub fn build_args(cfg: &TranscodingConfig, profile: &EncodingProfile) -> Vec<Str
             }
         }
     }
+    if cfg.flush_packets {
+        args.extend([
+            "-flush_packets".into(),
+            "1".into(),
+        ]);
+    }
+
     args.push("pipe:1".into());
     args
 }
@@ -137,9 +159,6 @@ impl Transcoder for FfmpegTranscoder {
             return super::PassthroughTranscoder::new()
                 .start(input, profile, cancel)
                 .await;
-        }
-        if !Self::available(&self.cfg) {
-            return Err(TranscodeError::Unavailable);
         }
 
         let rx = input

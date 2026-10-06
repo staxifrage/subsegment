@@ -42,6 +42,19 @@ impl TranscodedStream {
     }
 }
 
+/// Extra output streams produced by a single backend session.
+///
+/// Lets one `start()` call drive several encoder branches (e.g. a GStreamer
+/// `tee` fanning out to LOW/MEDIUM/HIGH) without changing the trait for
+/// existing single-output backends, which return an empty vector here.
+pub struct SecondaryStreams(pub Vec<TranscodedStream>);
+
+impl SecondaryStreams {
+    pub fn empty() -> Self {
+        Self(Vec::new())
+    }
+}
+
 /// Encoding parameters resolved from quality/codec configuration.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct EncodingProfile {
@@ -84,7 +97,10 @@ pub enum TranscodeError {
 ///
 /// ```text
 /// Transcoder
-///     +-- FfmpegTranscoder          (initial implementation)
+///     +-- FfmpegTranscoder          (subprocess fallback, kept during migration)
+///     +-- GstreamerTranscoder       (in-process gst pipeline; feature "gstreamer")
+///     +-- QualityRouter             (GStreamer per-quality allowlist -> ffmpeg rest)
+///     +-- PassthroughTranscoder     (ORIGINAL: zero-copy relay, no re-encode)
 ///     +-- NativeOpusTranscoder      (future)
 ///     +-- NativeAacTranscoder       (future)
 /// ```
@@ -102,6 +118,20 @@ pub trait Transcoder: Send + Sync {
         profile: EncodingProfile,
         cancel: Arc<tokio::sync::Notify>,
     ) -> Result<TranscodedStream, TranscodeError>;
+
+    /// Variant of [`start`](Self::start) that may additionally yield extra
+    /// output branches from the same decoded source (e.g. one `tee` feeding
+    /// several bitrate profiles). The default implementation delegates to
+    /// `start`, so existing backends keep working unchanged.
+    async fn start_multi(
+        &self,
+        input: StreamInput,
+        profile: EncodingProfile,
+        cancel: Arc<tokio::sync::Notify>,
+    ) -> Result<(TranscodedStream, SecondaryStreams), TranscodeError> {
+        let s = self.start(input, profile, cancel).await?;
+        Ok((s, SecondaryStreams::empty()))
+    }
 
     fn name(&self) -> &'static str;
 }

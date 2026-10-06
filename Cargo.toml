@@ -41,8 +41,29 @@ tokio-stream = "0.1"
 tokio-util = { version = "0.7", features = ["codec", "io"] }
 tower = { version = "0.5", features = ["limit"] }
 uuid = { version = "1", features = ["v4"] }
+libc = "0.2"
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter", "json"] }
+
+[features]
+default = []
+# GStreamer backend is optional: the engine still builds and runs with the
+# FFmpeg fallback when this feature (and the native GStreamer 1.0 libraries)
+# are absent. Enable with `--features gstreamer`.
+gstreamer = ["dep:gstreamer", "dep:gstreamer-app"]
+
+# Route all transcode profiles through the in-process GStreamer backend with
+# no FFmpeg fallback (stage 4 of the migration — only remove ffmpeg after
+# parity is proven). Implies `gstreamer`.
+gstreamer_only = ["gstreamer"]
+
+[dependencies.gstreamer]
+version = "0.23"
+optional = true
+
+[dependencies.gstreamer-app]
+version = "0.23"
+optional = true
 
 [dev-dependencies]
 figment = { version = "0.10", features = ["yaml", "env", "test"] }

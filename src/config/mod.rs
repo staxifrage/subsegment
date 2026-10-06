@@ -244,9 +244,17 @@ impl StreamingConfig {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(deny_unknown_fields, default)]
 pub struct TranscodingConfig {
-    /// `ffmpeg` | `passthrough_only` (disable re-encoding entirely).
+    /// `ffmpeg` | `gstreamer` | `passthrough_only` (disable re-encoding entirely).
+    ///
+    /// `gstreamer` requires a binary built with `--features gstreamer`; at
+    /// startup an unavailable GStreamer runtime falls back to FFmpeg so the
+    /// backend can be flipped per-environment without breaking service.
     pub backend: String,
     pub ffmpeg_path: String,
+    /// Comma-separated list of quality names (`low`, `medium`, `high`) that
+    /// the GStreamer backend should handle; every other quality stays on the
+    /// FFmpeg fallback during the staged migration. Empty = all qualities.
+    pub gst_qualities: Vec<String>,
     /// Concurrent transcode hard cap independent from limits (belt & braces).
     pub max_concurrent: usize,
     pub threads_per_pipeline: u32,
@@ -269,6 +277,7 @@ impl Default for TranscodingConfig {
         Self {
             backend: "ffmpeg".into(),
             ffmpeg_path: "ffmpeg".into(),
+            gst_qualities: Vec::new(),
             max_concurrent: 16,
             threads_per_pipeline: 2,
             output_queue_len: 64,
@@ -526,8 +535,14 @@ streaming:
   #opus_high_kbps: 160
 
 transcoding:
-    # "ffmpeg" or "passthrough_only"
+    # "ffmpeg" | "gstreamer" | "passthrough_only"
+    # gstreamer requires a build with `--features gstreamer`; when the
+    # runtime is unavailable the engine falls back to ffmpeg automatically.
     backend: ffmpeg
+
+    # Qualities handled by GStreamer during the staged migration
+    # (empty list = all qualities). Others stay on the ffmpeg fallback.
+    gst_qualities: []
 
     ffmpeg_path: ffmpeg
 

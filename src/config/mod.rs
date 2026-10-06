@@ -525,7 +525,7 @@ streaming:
   #opus_medium_kbps: 96
   #opus_high_kbps: 160
 
-  transcoding:
+transcoding:
     # "ffmpeg" or "passthrough_only"
     backend: ffmpeg
 

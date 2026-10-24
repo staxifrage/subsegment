@@ -1,8 +1,8 @@
 [package]
 name = "subsegment"
-version = "0.1.0"
+version = "0.1.4"
 edition = "2021"
-description = "Subsegment radio stream engine: ingest, normalize, transcode and serve live broadcast streams."
+description = "A Rust-based radio stream engine that ingests, normalize, transcode and proxies broadcast streams."
 license = "MIT"
 repository = "https://github.com/nuxstream/subsegment"
 rust-version = "1.89"
